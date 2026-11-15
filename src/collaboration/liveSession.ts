@@ -13,10 +13,10 @@ export type LiveWorldState = { missionId: string; screen: 'home' | 'mission' | '
 export type LivePlayer = { userId: string; displayName: string; role: string; isHost: boolean; connected: boolean; ready: boolean; pose: LivePose; missionStatus: LiveMissionStatus | null; worldState: LiveWorldState | null };
 export type LiveMessage = { id: string; userId: string; displayName: string; role: string; text: string; sentAt: number };
 export type AuthoritativeSession = { team_id: string; mission_id: string; status: 'lobby' | 'active' | 'completed'; host_user_id: string; revision: number; state: Record<string, unknown>; started_at: string | null; completed_at: string | null; updated_at: string };
-export type LiveSnapshot = { connected: boolean; teamId: string | null; selfId: string | null; hostId: string | null; players: LivePlayer[]; worldState: LiveWorldState | null; authoritativeSession: AuthoritativeSession | null; messages: LiveMessage[]; error: string };
+export type LiveSnapshot = { connected: boolean; teamId: string | null; selfId: string | null; hostId: string | null; players: LivePlayer[]; worldState: LiveWorldState | null; authoritativeSession: AuthoritativeSession | null; messages: LiveMessage[]; refreshVersion: number; error: string };
 
 const initialPose: LivePose = { x: 0, y: 0, z: 0, yaw: 0, activity: 'idle', mode: 'system' };
-const empty: LiveSnapshot = { connected: false, teamId: null, selfId: null, hostId: null, players: [], worldState: null, authoritativeSession: null, messages: [], error: '' };
+const empty: LiveSnapshot = { connected: false, teamId: null, selfId: null, hostId: null, players: [], worldState: null, authoritativeSession: null, messages: [], refreshVersion: 0, error: '' };
 let snapshot = empty;
 let channel: RealtimeChannel | null = null;
 let connectionGeneration = 0;
@@ -125,6 +125,7 @@ async function heartbeat(teamId: string, generation: number) {
   const result = data as { session?: AuthoritativeSession; players?: Array<{ user_id: string; ready: boolean; connected: boolean; pose: LivePose; role: string }> } | null;
   const session = result?.session;
   if (!session || !['lobby', 'active', 'completed'].includes(session.status)) return;
+  if (snapshot.authoritativeSession && session.revision < snapshot.authoritativeSession.revision) return;
   const hostChanged = snapshot.hostId !== session.host_user_id;
   if (identity) identity.isHost = identity.userId === session.host_user_id;
   if (session.status !== 'lobby' && !worldState) {
@@ -163,11 +164,21 @@ export async function connectLiveTeam(input: { teamId: string; userId: string; d
   next.on('postgres_changes', { event: '*', schema: 'public', table: 'orbital_team_sessions', filter: `team_id=eq.${input.teamId}` }, (event) => {
     const row = event.new as AuthoritativeSession | undefined;
     if (!row || !['lobby', 'active', 'completed'].includes(row.status)) return;
+    if (snapshot.authoritativeSession && row.revision < snapshot.authoritativeSession.revision) return;
     publish({ ...snapshot, hostId: row.host_user_id, authoritativeSession: row });
+  });
+  for (const table of ['orbital_team_members', 'orbital_team_plans', 'orbital_team_campaigns']) {
+    next.on('postgres_changes', { event: '*', schema: 'public', table, filter: `team_id=eq.${input.teamId}` }, () => {
+      publish({ ...snapshot, refreshVersion: snapshot.refreshVersion + 1 });
+    });
+  }
+  next.on('postgres_changes', { event: '*', schema: 'public', table: 'orbital_teams', filter: `id=eq.${input.teamId}` }, () => {
+    publish({ ...snapshot, refreshVersion: snapshot.refreshVersion + 1 });
   });
   next.on('broadcast', { event: 'world-state' }, ({ payload }) => {
     const candidate = (payload as { state?: unknown } | null)?.state;
     if (!validWorld(candidate)) return;
+    if (worldState && candidate.updatedAt <= worldState.updatedAt) return;
     const from = (payload as { senderId?: unknown } | null)?.senderId;
     if (from !== snapshot.hostId) return;
     worldState = candidate;
@@ -293,3 +304,4 @@ export function sendLiveMessage(text: string) {
   void channel.send({ type: 'broadcast', event: 'team-chat', payload: message });
   return true;
 }
+

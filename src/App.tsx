@@ -51,7 +51,7 @@ function App() {
   const finishVisualGuide = () => { writeStorage('orbital-command-visual-guide-v1', 'done'); setVisualGuide(null); };
   useEffect(() => { const start = () => { if (readStorage('orbital-command-visual-guide-v1') !== 'done') setVisualGuide('select'); }; window.addEventListener('orbital-start-visual-guide', start); return () => window.removeEventListener('orbital-start-visual-guide', start); }, []);
   const [mission, setMission] = useState<Mission>(initialMission);
-  const liveSession = useLiveSession((value) => value, (left, right) => left.connected === right.connected && left.hostId === right.hostId && left.worldState?.routeUpdatedAt === right.worldState?.routeUpdatedAt);
+  const liveSession = useLiveSession((value) => value, (left, right) => left.connected === right.connected && left.hostId === right.hostId && left.worldState?.updatedAt === right.worldState?.updatedAt && left.worldState?.launchId === right.worldState?.launchId);
   const [teamVisited, setTeamVisited] = useState(cloudConfigured);
   const [screen, setScreen] = useState<AppScreen>(() => routeFromHash()?.screen ?? (['#developers', '#connect'].includes(window.location.hash) ? 'developers' : cloudConfigured ? 'team' : 'home'));
   const [previewId, setPreviewId] = useState(() => routeFromHash()?.previewId ?? '');
@@ -103,7 +103,7 @@ function App() {
     }
     setMissionLaunch(false);
     if (sharedState.screen !== screen) setScreen(sharedState.screen);
-  }, [liveSession.connected, liveSession.worldState?.routeUpdatedAt]);
+  }, [liveSession.connected, liveSession.worldState?.updatedAt, liveSession.worldState?.launchId]);
 
   useEffect(() => {
     if (!liveSession.connected || !['home', 'mission', 'engineering', 'transit', 'exploration'].includes(screen)) return;
@@ -329,3 +329,4 @@ function App() {
 }
 
 export default App;
+

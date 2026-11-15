@@ -18,7 +18,7 @@ type Plan = { team_id: string; mission_id: string; design: unknown; revision: nu
 type CloudRecord = { snapshot: unknown; revision: number; updated_at: string };
 
 function sameLivePanel(left: LiveSnapshot, right: LiveSnapshot) {
- if(left.connected!==right.connected || left.error!==right.error || left.hostId!==right.hostId || left.authoritativeSession?.revision!==right.authoritativeSession?.revision || left.players.length!==right.players.length || left.messages.length!==right.messages.length) return false;
+ if(left.connected!==right.connected || left.error!==right.error || left.hostId!==right.hostId || left.refreshVersion!==right.refreshVersion || left.authoritativeSession?.revision!==right.authoritativeSession?.revision || left.players.length!==right.players.length || left.messages.length!==right.messages.length) return false;
  if(left.players.some((player,index)=>{const next=right.players[index];return !next || player.userId!==next.userId || player.displayName!==next.displayName || player.role!==next.role || player.isHost!==next.isHost || player.connected!==next.connected || player.ready!==next.ready || player.pose.activity!==next.pose.activity;}))return false;
  return left.messages.at(-1)?.id===right.messages.at(-1)?.id;
 }
@@ -71,6 +71,7 @@ export default function CollaborationHub({ language, mission, shipId, design, on
   }
  },[me,teamId]);
  useEffect(()=>{if(!me)return;void refresh();const timer=window.setInterval(()=>void refresh(),5000);return()=>window.clearInterval(timer);},[me,refresh]);
+ useEffect(()=>{if(live.refreshVersion>0)void refresh();},[live.refreshVersion,refresh]);
  useEffect(()=>{
   if(!team || !me || !cloudClient){void disconnectLiveTeam();return;}
   void connectLiveTeam({teamId:team.id,userId:me,displayName,role:myRole,hostId:team.owner_id});
@@ -191,3 +192,4 @@ function MissionLaunchPanel({ language, me, live, members, mission, isHost, onRe
   {!isHost&&<small>{t('Solo el anfitrión puede iniciar.','Only the host can start the mission.')}</small>}
  </section>;
 }
+
