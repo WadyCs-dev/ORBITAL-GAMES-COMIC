@@ -465,3 +465,4 @@ export default function SolarSystemScene({ mission, onSelect, shipId, language }
     </div>
   );
 }
+

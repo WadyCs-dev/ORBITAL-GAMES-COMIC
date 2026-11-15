@@ -30,3 +30,4 @@ create policy orbital_team_realtime_send on realtime.messages
   with check (extension in ('broadcast', 'presence') and public.orbital_can_access_realtime_topic(realtime.topic()));
 
 commit;
+

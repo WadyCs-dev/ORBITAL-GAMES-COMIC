@@ -58,3 +58,4 @@ This is a code-based status record, not a claim of expert validation. “Partial
 - GitHub Pages: the deployment workflow sets `VITE_NASA_MODE=snapshot`; regular local development defaults to the proxy and falls back to snapshots.
 - A stale browser tab can reference a hashed asset removed by a later deployment. The application reloads once, with a 30-second limit, and the error boundary offers manual reload if recovery cannot complete.
 - Next priorities: secure identity and hosted real-time collaboration; full localisation including source responses; meaningful mission-specific mechanics and failure analysis; expert and user evaluation; device and performance testing.
+

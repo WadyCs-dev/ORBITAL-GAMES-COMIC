@@ -40,3 +40,4 @@ Run [`supabase/migrations/202611150002_leaderboard.sql`](../supabase/migrations/
 The ranking reads XP from the player's saved campaign. The current simulation runs client-side, so these scores are **player-reported and unverified**, not suitable for prizes, trusted competitions or anti-cheat decisions. The printable diploma is available only in the game after a complete campaign, or from a completed campaign record; it is an in-game recognition, not an independently verified credential.
 
 Run `tests/supabase-leaderboard.sql` after both migrations in a disposable PostgreSQL database with a mocked Supabase auth schema. This does not replace integration tests with real accounts and the production RLS configuration.
+

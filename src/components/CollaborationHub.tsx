@@ -121,3 +121,4 @@ function LiveTeamPanel({ language, me, live }: { language: 'en' | 'es'; me?: str
   <form className="live-chat-compose" onSubmit={event=>{event.preventDefault();if(sendLiveMessage(draft))setDraft('');}}><label className="visually-hidden" htmlFor="live-team-message">{t('Mensaje para el equipo','Message to team')}</label><input id="live-team-message" maxLength={240} value={draft} onChange={event=>setDraft(event.target.value)} placeholder={t('Mensaje breve…','Short message…')} /><button className="systems-secondary" disabled={!live.connected||!draft.trim()}>{t('ENVIAR','SEND')}</button></form>
  </section>;
 }
+

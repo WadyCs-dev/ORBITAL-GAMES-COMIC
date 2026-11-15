@@ -1,10 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { cloudClient } from './client';
+import { parseDesignSnapshot } from '../systems/designSnapshot';
+import type { MissionDesign } from '../systems/engineering';
+import type { ShipId } from '../data/ships';
+import type { TransitState } from '../systems/transit';
 
 export type LiveActivity = 'idle' | 'walk' | 'run' | 'interact' | 'aboard';
 export type LivePose = { x: number; y: number; z: number; yaw: number; activity: LiveActivity; mode: 'system' | 'flight' | 'orbit' | 'surface' };
-export type LiveWorldState = { missionId: string; screen: 'home' | 'mission' | 'engineering' | 'transit' | 'exploration'; updatedAt: number };
+export type LiveWorldState = { missionId: string; screen: 'home' | 'mission' | 'engineering' | 'transit' | 'exploration'; updatedAt: number; routeUpdatedAt: number; shipId?: ShipId; design?: MissionDesign | null; arrival?: TransitState | null; transitState?: TransitState | null; transitStarted?: boolean; transitRate?: number };
 export type LivePlayer = { userId: string; displayName: string; role: string; isHost: boolean; pose: LivePose; worldState: LiveWorldState | null };
 export type LiveMessage = { id: string; userId: string; displayName: string; role: string; text: string; sentAt: number };
 export type LiveSnapshot = { connected: boolean; teamId: string | null; selfId: string | null; hostId: string | null; players: LivePlayer[]; worldState: LiveWorldState | null; messages: LiveMessage[]; error: string };
@@ -53,10 +57,26 @@ function validPose(value: unknown): value is LivePose {
 
 function validWorld(value: unknown): value is LiveWorldState {
   if (!value || typeof value !== 'object') return false;
-  const item = value as Partial<LiveWorldState>;
-  return typeof item.missionId === 'string' && missionIds.has(item.missionId)
-    && typeof item.screen === 'string' && screens.has(item.screen)
-    && Number.isFinite(item.updatedAt);
+  const state = value as Partial<LiveWorldState>;
+  if (typeof state.missionId !== 'string' || !missionIds.has(state.missionId)) return false;
+  const validTransit = (candidate: unknown): candidate is TransitState | null => {
+    if (candidate === null) return true;
+    if (!candidate || typeof candidate !== 'object') return false;
+    const transit = candidate as Partial<TransitState>;
+    return ['elapsedDays', 'durationDays', 'distanceKm', 'fuel', 'energy', 'integrity', 'data'].every((key) => Number.isFinite(transit[key as keyof TransitState]))
+      && Number(transit.elapsedDays) >= 0 && Number(transit.durationDays) > 0 && Number(transit.elapsedDays) <= Number(transit.durationDays)
+      && ['fuel', 'energy', 'integrity', 'data'].every((key) => Number(transit[key as keyof TransitState]) >= 0 && Number(transit[key as keyof TransitState]) <= 100)
+      && ['pending', 'required', 'resolved'].includes(String(transit.decision))
+      && [null, 'fuel', 'energy'].includes(transit.choice ?? null);
+  };
+  const validDesign = state.design === undefined || state.design === null || parseDesignSnapshot(JSON.stringify({ version: 1, missionId: state.missionId, design: state.design }), state.missionId) !== null;
+  return typeof state.screen === 'string' && screens.has(state.screen)
+    && Number.isFinite(state.updatedAt) && Number.isFinite(state.routeUpdatedAt)
+    && (state.shipId === undefined || ['pioneer', 'swift', 'atlas'].includes(state.shipId))
+    && validDesign && (state.arrival === undefined || validTransit(state.arrival))
+    && (state.transitState === undefined || validTransit(state.transitState))
+    && (state.transitStarted === undefined || typeof state.transitStarted === 'boolean')
+    && (state.transitRate === undefined || [0, 1, 10, 100, 1000].includes(state.transitRate));
 }
 
 function membersFromPresence() {
@@ -144,11 +164,19 @@ export function setLivePose(next: LivePose) {
   void trackPresence();
 }
 
-export function publishLiveWorldState(missionId: string, screen: LiveWorldState['screen']) {
+export function publishLiveWorldState(missionId: string, screen: LiveWorldState['screen'], options: { shipId?: ShipId; design?: MissionDesign | null; arrival?: TransitState | null } = {}) {
   if (!channel || !identity?.isHost || !missionIds.has(missionId)) return;
-  worldState = { missionId, screen, updatedAt: Date.now() };
+  const now = Date.now();
+  worldState = { missionId, screen, updatedAt: now, routeUpdatedAt: now, shipId: options.shipId, design: ['transit', 'exploration'].includes(screen) ? options.design ?? null : null, arrival: options.arrival ?? null, transitState: null, transitStarted: false, transitRate: 0 };
   publish({ ...snapshot, worldState });
   void trackPresence();
+  void channel.send({ type: 'broadcast', event: 'world-state', payload: { senderId: identity.userId, state: worldState } });
+}
+
+export function publishLiveTransit(state: TransitState, started: boolean, rate: number) {
+  if (!channel || !identity?.isHost || !worldState || worldState.screen !== 'transit' || ![0, 1, 10, 100, 1000].includes(rate)) return;
+  worldState = { ...worldState, updatedAt: Date.now(), transitState: state, transitStarted: started, transitRate: rate };
+  publish({ ...snapshot, worldState });
   void channel.send({ type: 'broadcast', event: 'world-state', payload: { senderId: identity.userId, state: worldState } });
 }
 
@@ -161,3 +189,4 @@ export function sendLiveMessage(text: string) {
   void channel.send({ type: 'broadcast', event: 'team-chat', payload: message });
   return true;
 }
+
