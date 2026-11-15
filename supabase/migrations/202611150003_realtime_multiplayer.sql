@@ -22,11 +22,11 @@ grant execute on function public.orbital_can_access_realtime_topic(text) to auth
 drop policy if exists orbital_team_realtime_receive on realtime.messages;
 create policy orbital_team_realtime_receive on realtime.messages
   for select to authenticated
-  using (public.orbital_can_access_realtime_topic(realtime.topic()));
+  using (extension in ('broadcast', 'presence') and public.orbital_can_access_realtime_topic(realtime.topic()));
 
 drop policy if exists orbital_team_realtime_send on realtime.messages;
 create policy orbital_team_realtime_send on realtime.messages
   for insert to authenticated
-  with check (public.orbital_can_access_realtime_topic(realtime.topic()));
+  with check (extension in ('broadcast', 'presence') and public.orbital_can_access_realtime_topic(realtime.topic()));
 
 commit;
