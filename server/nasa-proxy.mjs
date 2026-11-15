@@ -7,7 +7,7 @@ const keyed = 'https://api.nasa.gov';
 const daysAgo = (n) => new Date(Date.now() - n * 86400000).toISOString().slice(0,10);
 const today = () => daysAgo(0);
 const datasets = {
-  apod: () => ({ url:'https://science.nasa.gov/wp-json/wp/v2/apod-basic/', key:true }),
+  apod: () => ({ url:'https://science.nasa.gov/wp-json/wp/v2/apod-basic/' }),
   neows: () => ({ url:`${keyed}/neo/rest/v1/feed?start_date=${daysAgo(6)}&end_date=${today()}`, key:true }),
   neo_eros: () => ({url:`${keyed}/neo/rest/v1/neo/3542519`,key:true}),
   neo_catalog: () => ({url:`${keyed}/neo/rest/v1/neo/browse?page=0&size=10`,key:true}),
@@ -28,7 +28,7 @@ const datasets = {
   jpl_fireball: () => ({url:'https://ssd-api.jpl.nasa.gov/fireball.api?limit=10'}),
   jpl_scout: () => ({url:'https://ssd-api.jpl.nasa.gov/scout.api'}),
 };
-for (const type of ['FLR','CME','GST','IPS','SEP','MPC','RBE','HSS','notifications']) datasets[`donki_${type.toLowerCase()}`] = () => ({url:`${keyed}/DONKI/${type}?startDate=${daysAgo(7)}&endDate=${today()}`, key:true});
+for (const type of ['FLR','CME','GST','IPS','SEP','MPC','RBE','HSS','notifications']) datasets[`donki_${type.toLowerCase()}`] = () => ({url:`https://ccmc.gsfc.nasa.gov/DONKI-API/get/${type}?startDate=${daysAgo(7)}&endDate=${today()}`});
 export const nasaDatasetIds = Object.keys(datasets);
 const cache = new Map();
 const requests = new Map();

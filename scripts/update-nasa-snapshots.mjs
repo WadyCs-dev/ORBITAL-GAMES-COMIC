@@ -2,8 +2,7 @@ import { createServer } from 'node:http';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { nasaDatasetIds, nasaHandler } from '../server/nasa-proxy.mjs';
 try { process.loadEnvFile('.env.local'); } catch (error) { if (error.code !== 'ENOENT') throw error; }
-if (!process.env.NASA_API_KEY) throw Error('Configura NASA_API_KEY en el servidor o en .env.local.');
-const key = Buffer.from(process.env.NASA_API_KEY);
+const key = process.env.NASA_API_KEY ? Buffer.from(process.env.NASA_API_KEY) : null;
 const directory = new URL('../public/nasa-data/', import.meta.url);
 await mkdir(directory, { recursive: true });
 const server = createServer((req,res)=>void nasaHandler(req,res));
@@ -13,6 +12,7 @@ const requested = process.argv.slice(2);
 if (requested.some(id => !nasaDatasetIds.includes(id))) throw Error('Identificador de fuente no permitido.');
 const selected = requested.length ? requested : nasaDatasetIds;
 let errors = 0;
+let apodUpdated = false;
 try {
   for (const dataset of selected) {
     const response = await fetch(`${origin}/api/nasa?dataset=${encodeURIComponent(dataset)}`);
@@ -25,14 +25,15 @@ try {
       continue;
     }
     const bytes = Buffer.from(await response.arrayBuffer());
-    if (bytes.includes(key)) throw Error('Se detectó la clave en una respuesta; actualización cancelada.');
+    if (key && bytes.includes(key)) throw Error('Se detectó la clave en una respuesta; actualización cancelada.');
     await writeFile(new URL(`${dataset}.json`,directory),bytes);
+    if (dataset === 'apod') apodUpdated = true;
     console.log(`${dataset}: actualizado`);
   }
-  const image = selected.includes('apod') ? await fetch(`${origin}/api/nasa/apod-image`) : null;
+  const image = apodUpdated ? await fetch(`${origin}/api/nasa/apod-image`) : null;
   if (image?.ok) {
     const bytes = Buffer.from(await image.arrayBuffer());
-    if (bytes.includes(key)) throw Error('Se detectó la clave en una imagen; actualización cancelada.');
+    if (key && bytes.includes(key)) throw Error('Se detectó la clave en una imagen; actualización cancelada.');
     const ext = ({'image/jpeg':'jpg','image/png':'png','image/webp':'webp'})[image.headers.get('content-type')];
     if (!ext) throw Error('El formato de imagen no está permitido.');
     const name = `apod-image.${ext}`;

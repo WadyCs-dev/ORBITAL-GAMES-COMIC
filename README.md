@@ -10,12 +10,6 @@ The planetary environments, launch windows, transit profiles, simulated sensor r
 
 Earth-based cooperation is part of the story. The Dominican tracking station is fictional; real tracking stations appear only as educational context and are not connected to the game. [Texture credits and limitations](public/textures/README.md) and [vector artwork details](public/illustrations/README.md) accompany the assets.
 
-## AI-assisted development and voice
-
-AI-assisted development was used when creating parts of the software, including the code for the commander experience and procedural 3D Solar System visualisation. The planets and vehicles are rendered by Three.js using code, geometry and credited textures; they are not presented as scientifically accurate generative models.
-
-The commander's speech uses the browser's speech synthesis service. The available voices and whether they use neural or other synthesis depend on the player's browser and operating system. The project does not guarantee a particular accent, human performer or AI voice engine.
-
 ## Run locally
 
 Requirements: Node.js 24 or later and a browser with WebGL. Available voices depend on the browser and operating system.
@@ -44,7 +38,7 @@ GitHub Pages cannot run the intermediary. It displays dated snapshots instead. A
 
 ## ORBITAL DEVELOPERS
 
-The application includes a project-integration area, a Supabase Edge REST API, deterministic proposal generator and branded read-only preview. Persistent cross-device previews require the Supabase migrations and Edge Function deployment described in the [developer setup guide](docs/orbital-developers.md). A Node/MCP alternative remains available for server-side integrators. The proposal generator is rule based, does not use an AI model and does not validate scientific claims.
+The application includes a project-integration area, a Supabase Edge REST API, a proposal generator and branded read-only preview. Persistent cross-device previews require the Supabase migrations and Edge Function deployment described in the [developer setup guide](docs/orbital-developers.md). A Node/MCP alternative remains available for server-side integrators. Proposals require review and do not validate scientific claims.
 
 ## Gameplay
 
@@ -64,6 +58,16 @@ The application includes a project-integration area, a Supabase Edge REST API, d
 - Fuel, energy, integrity, storage, communications and mission time appear in the HUD. A confirmed mission abort resets that campaign's resources and progress.
 
 Planetary sizes and distances are not to scale. Free flight compresses time; transit profiles and communication delays are simplified for educational use. They must not be used for real mission planning.
+
+## Supabase and GitHub Actions
+
+For account sign-in, registration, campaign backup and cooperative teams, add these repository secrets under **Settings → Secrets and variables → Actions**:
+
+- `SUPABASE_URL`: the Supabase project URL.
+- `SUPABASE_PUBLISHABLE_KEY`: the project's publishable key (the legacy `anon` key is also public).
+- `NASA_API_KEY`: optional; enables snapshot refreshes from NASA services that require a key. Public DONKI and APOD snapshots can refresh without it.
+
+The Pages workflow maps the two Supabase secrets to the frontend build. In Supabase **Authentication → URL Configuration**, set the GitHub Pages address as the site URL and add it to the allowed redirect URLs so email confirmation returns to the game. Never add the database password or `service_role` key to GitHub Actions or frontend variables.
 
 ## Project structure
 
@@ -89,8 +93,12 @@ The language selector defaults to UK English and translates the main navigation,
 
 The commander supports English and Spanish browser speech synthesis, subject to available browser voices and user activation. A skippable visual guide points to mission selection, preparation, design and configuration; it can be restarted from the commander transmission log. Mission reports provide a debrief based on recorded results. Team presence, readiness, shared mission phase and visible avatars are available when Supabase and the required migrations are configured; spacecraft physics still run on each client, so this is not a single authoritative flight simulation. Competitive play, a full exploration sandbox and persistent analysis of exploration failures are not implemented. Failed transit attempts are recorded and explained in Reports. The isolated mission experiment lab previews both valid and invalid designs without changing campaign progress.
 
-Mission engineering offers three educational orbital profiles and three transit difficulty settings. Orbital profiles affect launch payload capacity, transit estimates, science data per scan and downlink capacity; the factors are illustrative rather than flight-certified orbit predictions. The selected difficulty changes transit reserves and energy consumption. Exhausted transit energy, zero integrity or an impossible mandatory manoeuvre results in a mission failure, with retry and design review. A design can be saved locally, compared and shared as validated JSON for the same mission. Exploration can fail on zero integrity or critically low energy in a non-surface orbital mission; not every failure scenario is represented. Online accounts, multiplayer and team competition remain unimplemented. Run `npm run test:engineering` for the browser regression (requires Playwright as described above).
+Mission engineering offers three educational orbital profiles and three transit difficulty settings. Orbital profiles affect launch payload capacity, transit estimates, science data per scan and downlink capacity; the factors are illustrative rather than flight-certified orbit predictions. The selected difficulty changes transit reserves and energy consumption. Exhausted transit energy, zero integrity or an impossible mandatory manoeuvre results in a mission failure, with retry and design review. A design can be saved locally, compared and shared as validated JSON for the same mission. Exploration can fail on zero integrity or critically low energy in a non-surface orbital mission; not every failure scenario is represented.
 
 For a requirement-by-requirement implementation status, limitations and verification commands, see [project status and checklist](docs/project-status-and-checklist.md).
 
 Accounts, private campaign backup, shared team planning and cooperative presence require Supabase setup. ORBITAL DEVELOPERS saves projects through its Supabase Edge Function and user sign-in; apply migrations and deploy the function as described in [Supabase setup](docs/supabase-setup.md) and [ORBITAL Developers](docs/orbital-developers.md). A separate Node/MCP backend remains optional for server-side integrations. The [implementation checklist](docs/project-status-and-checklist.md) separates completed code from production configuration and remaining work.
+
+## Contributors
+
+- [Susan-Castillo29](https://github.com/Susan-Castillo29)
