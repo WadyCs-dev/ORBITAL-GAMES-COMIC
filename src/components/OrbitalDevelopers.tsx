@@ -17,7 +17,12 @@ const copy = (language: Language, es: string, en: string) => language === 'es' ?
 
 async function api<T>(path: string, token: string, init: RequestInit = {}): Promise<T> {
   if (!apiBase) throw new Error('La API aún no está configurada en este sitio.');
-  const response = await fetch(`${apiBase}${path}`, { ...init, headers: { Accept: 'application/json', ...(init.body ? { 'Content-Type': 'application/json' } : {}), ...(publicKey ? { apikey: publicKey } : {}), ...(token ? { Authorization: `Bearer ${token}` } : {}), ...init.headers } });
+  let response: Response;
+  try {
+    response = await fetch(`${apiBase}${path}`, { ...init, headers: { Accept: 'application/json', ...(init.body ? { 'Content-Type': 'application/json' } : {}), ...(publicKey ? { apikey: publicKey } : {}), ...(token ? { Authorization: `Bearer ${token}` } : {}), ...init.headers } });
+  } catch {
+    throw new Error('No se pudo conectar con ORBITAL DEVELOPERS. Verifica que la función orbital-gamification esté desplegada en Supabase.');
+  }
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data?.error?.message || data?.error || `La solicitud falló (${response.status}).`);
   return data as T;

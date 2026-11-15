@@ -241,12 +241,11 @@ export function setLiveMissionStatus(next: Omit<LiveMissionStatus, 'updatedAt'>)
   }
 }
 
-export async function startLiveMission(missionId: string, expectedMemberIds: string[], options: { shipId?: ShipId; design?: MissionDesign | null } = {}) {
-  const required = [...new Set(expectedMemberIds)];
+export async function startLiveMission(missionId: string, options: { shipId?: ShipId; design?: MissionDesign | null } = {}) {
   const players = snapshot.players;
   const roles = new Set(['planning', 'engineering', 'science', 'communications']);
-  if (!channel || !cloudClient || !identity || identity.userId !== snapshot.hostId || !snapshot.connected || !missionIds.has(missionId) || required.length < 1 || required.length > 4) return false;
-  if (required.length !== players.length || required.some((id) => !players.some((player) => player.userId === id && player.ready && roles.has(player.role)))) return false;
+  const activePlayers = players.filter((player) => player.connected && player.ready && roles.has(player.role));
+  if (!channel || !cloudClient || !identity || identity.userId !== snapshot.hostId || !snapshot.connected || !missionIds.has(missionId) || activePlayers.length < 2 || activePlayers.length > 4 || !activePlayers.some((player) => player.userId === identity?.userId)) return false;
   const { data, error } = await cloudClient.rpc('orbital_start_team_mission', { target_team: snapshot.teamId, target_mission: missionId });
   if (error) { publish({ ...snapshot, error: error.message }); return false; }
   const serverSession = data as AuthoritativeSession;
