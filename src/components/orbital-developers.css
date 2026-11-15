@@ -9,3 +9,34 @@
 .developer-auth-form,.developer-auth-status{display:grid;gap:12px;padding:16px;border:1px solid var(--dev-line);background:#081722}.developer-auth-form h3{margin:0;color:#d8f2fa;font-size:16px;font-weight:550}.developer-auth-status{grid-template-columns:minmax(0,1fr) auto;align-items:center;color:#a8c1ce;font-size:12px}.developer-consent{grid-template-columns:18px 1fr;align-items:start;gap:10px;color:#adc1cb;font:11px/1.6 Inter,"Segoe UI",sans-serif;letter-spacing:0}.developer-consent input[type=checkbox]{width:16px;min-height:16px;height:16px;margin:1px 0;accent-color:#63c9e2}
 @media(max-width:580px){.developer-auth-status{grid-template-columns:1fr}.developer-auth-status .developer-button{justify-self:start}}
 .developer-page{flex:1;height:100%;min-height:0;overflow-y:auto;overscroll-behavior:contain}
+
+/* Keep the complete developer workspace readable in both application themes. */
+.app-shell[data-theme='light'] .developer-page{
+  --dev-line:rgba(45,83,108,.22);
+  --dev-ink:#183548;
+  --dev-muted:#526b7d;
+  background:radial-gradient(ellipse at 75% 12%,rgba(71,159,190,.12),transparent 42%),linear-gradient(145deg,#f8fbfd,#edf3f7 55%,#f5f8fa);
+  color:var(--dev-ink);
+}
+.app-shell[data-theme='light'] .developer-page :is(.developer-topline,.developer-kicker,.developer-doc-link,.developer-flow>b,.developer-orbit-card>i,.developer-capability>i,.developer-missions>article>b,.developer-missions small,.developer-share a,.developer-docs summary,.developer-legal>b,.developer-state a,.developer-mission-select button>span,.developer-active-mission>small){color:#075d79}
+.app-shell[data-theme='light'] .developer-page :is(.developer-hero p,.developer-form-wrap>div>p,.developer-orbit-card>span,.developer-orbit-card>small,.developer-grid p,.developer-review p,.developer-section p,.developer-muted,.developer-capability>small,.developer-template>small,.developer-form-footer>small,.developer-missions p,.developer-docs>p,.developer-legal,.developer-workbench>div>p,.developer-active-mission>p,.developer-local-progress,.developer-engine-section>div>p,.developer-auth-status,.developer-consent,.preview-page .developer-grid ul){color:#4b6374}
+.app-shell[data-theme='light'] .developer-page :is(.developer-disclaimer,.developer-message,.developer-notice){color:#67501e}
+.app-shell[data-theme='light'] .developer-page .developer-message.error{color:#9b382d}
+.app-shell[data-theme='light'] .developer-page :is(.developer-grid>article,.developer-form-wrap,.developer-review,.developer-section,.developer-docs,.developer-workbench,.developer-engine-section,.developer-active-mission,.developer-auth-form,.developer-auth-status,.developer-state){border-color:var(--dev-line);background:linear-gradient(145deg,#fff,#f2f7fa);color:var(--dev-ink)}
+.app-shell[data-theme='light'] .developer-page .developer-orbit-card{border-color:#8daebe;background:radial-gradient(circle at 48% 39%,rgba(42,146,175,.18),transparent 26%),radial-gradient(circle at 50% 43%,#d8eaf0 0 18%,#c5dce5 19% 42%,transparent 43%),linear-gradient(150deg,#f5fafc,#dce9ef);box-shadow:0 20px 60px rgba(36,69,88,.12)}
+.app-shell[data-theme='light'] .developer-page .developer-orbit-card:after{border-color:rgba(28,100,124,.35)}
+.app-shell[data-theme='light'] .developer-page .developer-button{border-color:#17647d;background:linear-gradient(110deg,#0b627b,#147d96);color:#fff}
+.app-shell[data-theme='light'] .developer-page .developer-button.secondary{border-color:#9bb4c2;background:#eaf2f6;color:#183548}
+.app-shell[data-theme='light'] .developer-page .developer-field{color:#35576b}
+.app-shell[data-theme='light'] .developer-page .developer-field input,.app-shell[data-theme='light'] .developer-page .developer-field textarea{border-color:#9db4c1;background:#fff;color:#183548}
+.app-shell[data-theme='light'] .developer-page .developer-field input:focus,.app-shell[data-theme='light'] .developer-page .developer-field textarea:focus{border-color:#08738e;box-shadow:0 0 0 2px rgba(8,115,142,.16)}
+.app-shell[data-theme='light'] .developer-page .developer-missions>article{border-color:var(--dev-line);background:#f8fbfd}
+.app-shell[data-theme='light'] .developer-page .developer-share{border-color:var(--dev-line);background:#edf4f7}
+.app-shell[data-theme='light'] .developer-page .developer-share button{border-color:#8fa9b7;background:#e0ebf0;color:#183548}
+.app-shell[data-theme='light'] .developer-page .developer-docs pre{background:#e8f0f4;color:#203f52}
+.app-shell[data-theme='light'] .developer-page .developer-error{border-color:#d7a095;background:#fff5f2;color:#8b352b}
+.app-shell[data-theme='light'] .developer-page .developer-mission-select button{border-color:#b2c4ce;background:#f7fafc;color:#29485b}
+.app-shell[data-theme='light'] .developer-page .developer-mission-select button.active{border-color:#18718a;background:#dceff4;color:#153b4d}
+.app-shell[data-theme='light'] .developer-page .developer-engine-preview{border-color:#a3b9c5}
+.app-shell[data-theme='light'] .developer-page :is(h1,h2,h3){color:#183548}
+.app-shell[data-theme='light'] .developer-page :is(button,a,summary):focus-visible{outline-color:#075d79}

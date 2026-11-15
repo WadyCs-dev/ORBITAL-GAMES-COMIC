@@ -67,7 +67,7 @@ For account sign-in, registration, campaign backup and cooperative teams, add th
 - `SUPABASE_PUBLISHABLE_KEY`: the project's publishable key (the legacy `anon` key is also public).
 - `NASA_API_KEY`: optional; enables snapshot refreshes from NASA services that require a key. Public DONKI and APOD snapshots can refresh without it.
 
-The Pages workflow maps the two Supabase secrets to the frontend build and checks that both are present. Adding or changing a secret does not redeploy Pages; run the deployment workflow from **Actions → Deploy ORBITAL COMMAND to GitHub Pages → Run workflow**, or push a commit. In Supabase **Authentication → URL Configuration**, set the GitHub Pages address as the site URL and add it to the allowed redirect URLs so email confirmation returns to the game. Never add the database password or `service_role` key to GitHub Actions or frontend variables.
+The Pages workflow maps the two Supabase secrets to the frontend build and checks that both are present. In repository **Settings → Pages → Build and deployment**, set **Source** to **GitHub Actions**; publishing from a branch serves the unbuilt Vite entry point and leaves the app blank. Adding or changing a secret does not redeploy Pages; run the deployment workflow from **Actions → Deploy ORBITAL COMMAND to GitHub Pages → Run workflow**, or push a commit. In Supabase **Authentication → URL Configuration**, set the GitHub Pages address as the site URL and add it to the allowed redirect URLs so email confirmation returns to the game. Never add the database password or `service_role` key to GitHub Actions or frontend variables.
 
 ## Project structure
 
