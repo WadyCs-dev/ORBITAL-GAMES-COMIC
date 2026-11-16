@@ -11,6 +11,10 @@ test('no sustituye una fuente viva por una instantánea', async()=>{
  const original=globalThis.fetch;let calls=0;globalThis.fetch=async()=>{calls++;return Response.json({dataset:'apod',observedAt:'2026-01-01',data:[]});};
  try {const result=await loadNASAData('apod','/',new AbortController().signal);assert.equal(result.snapshot,undefined);assert.equal(calls,1);}finally{globalThis.fetch=original;}
 });
+test('usa un origen API configurable sin cambiar la ruta de snapshots', async()=>{
+ const original=globalThis.fetch;const urls=[];globalThis.fetch=async url=>{urls.push(String(url));return Response.json({dataset:'apod',observedAt:'2026-01-01',data:[]});};
+ try {await loadNASAData('apod','/orbital-command/',new AbortController().signal,'proxy','https://orbital-api.onrender.com');assert.equal(urls[0],'https://orbital-api.onrender.com/api/nasa?dataset=apod');}finally{globalThis.fetch=original;}
+});
 test('static hosting loads snapshots directly without calling an unavailable API', async () => {
  const original=globalThis.fetch; const urls=[];
  globalThis.fetch=async url=>{urls.push(url);return String(url).endsWith('/index.json') ? Response.json(['apod']) : Response.json({dataset:'apod',observedAt:'2026-01-01',data:[]});};
