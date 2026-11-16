@@ -24,19 +24,18 @@ const roleColors: Record<string, number> = { planning: 0x78d8ec, engineering: 0x
 export function createPlayerAvatar(player: LivePlayer): AvatarRig {
   const root = new THREE.Group();
   root.userData.playerId = player.userId;
-  const suit = new THREE.MeshStandardMaterial({ color: roleColors[player.role] ?? 0x78d8ec, metalness: 0.18, roughness: 0.6, emissive: roleColors[player.role] ?? 0x78d8ec, emissiveIntensity: 0.08 });
-  const trim = new THREE.MeshStandardMaterial({ color: 0xdfeef2, metalness: 0.34, roughness: 0.36 });
-  const visor = new THREE.MeshStandardMaterial({ color: 0x17374a, metalness: 0.8, roughness: 0.18, emissive: 0x24799a, emissiveIntensity: 0.14 });
-  const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.19, 0.42, 3, 8), suit); torso.position.y = 0.67; root.add(torso);
-  const helmet = new THREE.Mesh(new THREE.SphereGeometry(0.2, 14, 10), trim); helmet.position.y = 1.13; root.add(helmet);
-  const face = new THREE.Mesh(new THREE.SphereGeometry(0.145, 12, 8), visor); face.position.set(0, 1.14, -0.09); root.add(face);
-  const backpack = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.34, 0.13), trim); backpack.position.set(0, 0.72, 0.2); root.add(backpack);
+  const accent = roleColors[player.role] ?? 0x78d8ec;
+  const hull = new THREE.MeshStandardMaterial({ color: 0xdfeaf1, metalness: 0.72, roughness: 0.28 });
+  const role = new THREE.MeshStandardMaterial({ color: accent, metalness: 0.48, roughness: 0.34, emissive: accent, emissiveIntensity: 0.18 });
+  const glass = new THREE.MeshStandardMaterial({ color: 0x17374a, metalness: 0.82, roughness: 0.14, emissive: 0x24799a, emissiveIntensity: 0.28 });
+  const engine = new THREE.MeshBasicMaterial({ color: 0x72e9ff });
+  const fuselage = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.22, 0.82, 12), hull); fuselage.rotation.x = Math.PI / 2; root.add(fuselage);
+  const nose = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.48, 10), role); nose.rotation.x = -Math.PI / 2; nose.position.z = -0.6; root.add(nose);
+  const cockpit = new THREE.Mesh(new THREE.SphereGeometry(0.14, 12, 8), glass); cockpit.scale.set(0.78, 0.62, 1.25); cockpit.position.set(0, 0.17, -0.12); root.add(cockpit);
+  const wings = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.07, 0.34), role); wings.position.set(0, -0.02, 0.04); root.add(wings);
+  for (const side of [-1, 1]) { const tip = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.06, 0.27), hull); tip.position.set(side * 0.48, 0, 0.08); root.add(tip); }
+  const engineGlow = new THREE.Mesh(new THREE.SphereGeometry(0.11, 10, 8), engine); engineGlow.position.set(0, 0, 0.48); root.add(engineGlow);
   const arms: THREE.Group[] = []; const legs: THREE.Group[] = [];
-  for (const side of [-1, 1]) {
-    const arm = new THREE.Group(); arm.position.set(side * 0.23, 0.83, 0); const upper = new THREE.Mesh(new THREE.CapsuleGeometry(0.065, 0.28, 3, 6), suit); upper.position.y = -0.16; arm.add(upper); root.add(arm); arms.push(arm);
-    const leg = new THREE.Group(); leg.position.set(side * 0.095, 0.39, 0); const lower = new THREE.Mesh(new THREE.CapsuleGeometry(0.075, 0.27, 3, 6), trim); lower.position.y = -0.16; leg.add(lower); root.add(leg); legs.push(leg);
-  }
-  const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.055, 8, 6), new THREE.MeshBasicMaterial({ color: 0x64edb2 })); beacon.position.set(0.16, 1.25, 0); root.add(beacon);
   const canvas = document.createElement('canvas'); canvas.width = 384; canvas.height = 96;
   const context = canvas.getContext('2d');
   if (context) {
@@ -46,8 +45,8 @@ export function createPlayerAvatar(player: LivePlayer): AvatarRig {
     context.fillStyle = '#91dced'; context.font = 'bold 20px Segoe UI, sans-serif'; context.fillText(player.role.toUpperCase(), 192, 72);
   }
   const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace;
-  const label = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false })); label.position.y = 1.72; label.scale.set(1.9, 0.48, 1); root.add(label);
-  root.scale.setScalar(0.76);
+  const label = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false })); label.position.y = 0.92; label.scale.set(1.9, 0.48, 1); root.add(label);
+  root.scale.setScalar(0.88);
   return { root, arms, legs };
 }
 export function disposeAvatar(rig: AvatarRig) {
@@ -301,7 +300,7 @@ export default function SolarSystemScene({ mission, onSelect, shipId, language }
     const refreshLivePlayers = () => {
       const live = getLiveSnapshot();
       livePlayers = live.players.filter((player) => player.connected); selfId = live.selfId;
-      teamDock.visible = live.connected;
+      teamDock.visible = livePlayers.some((player) => player.userId !== selfId);
       for (const player of livePlayers) {
         if (player.userId === selfId) localPose = { ...player.pose };
         let entry = playerAvatars.get(player.userId);
@@ -367,7 +366,7 @@ export default function SolarSystemScene({ mission, onSelect, shipId, language }
       const shipAngle = elapsed * 0.18;
       ship.position.set((earth?.group.position.x ?? 0) + Math.cos(shipAngle) * 1.12, 0.24 * Math.sin(elapsed * 0.7), (earth?.group.position.z ?? 0) + Math.sin(shipAngle) * 1.12);
       ship.rotation.y = -shipAngle + Math.PI / 2;
-      if (selfId && getLiveSnapshot().connected) {
+      if (selfId) {
         const forward = Number(pressed.has('w') || pressed.has('arrowup')) - Number(pressed.has('s') || pressed.has('arrowdown'));
         const turn = Number(pressed.has('a') || pressed.has('arrowleft')) - Number(pressed.has('d') || pressed.has('arrowright'));
         const moving = forward !== 0;
@@ -392,7 +391,7 @@ export default function SolarSystemScene({ mission, onSelect, shipId, language }
           entry.rig.arms[i].rotation.z = gait ? Math.sin(elapsed * 8 * gait + i * Math.PI) * (target.activity === 'interact' ? 0.42 : 0.48) : 0;
           entry.rig.legs[i].rotation.x = gait && target.activity !== 'interact' ? Math.sin(elapsed * 8 * gait + i * Math.PI) * 0.48 : 0;
         }
-        entry.rig.root.scale.setScalar(target.activity === 'aboard' ? 0.52 : 0.76);
+        entry.rig.root.scale.setScalar(0.88);
       }
       sunHalo.scale.setScalar(1 + Math.sin(elapsed * 0.7) * 0.018);
       stars.rotation.y = elapsed * 0.0015;

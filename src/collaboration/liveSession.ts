@@ -126,6 +126,10 @@ async function heartbeat(teamId: string, generation: number) {
   const session = result?.session;
   if (!session || !['lobby', 'active', 'completed'].includes(session.status)) return;
   if (snapshot.authoritativeSession && session.revision < snapshot.authoritativeSession.revision) return;
+  if (snapshot.authoritativeSession?.status === 'active' && session.status === 'lobby') {
+    worldState = null;
+    missionStatus = null;
+  }
   const hostChanged = snapshot.hostId !== session.host_user_id;
   if (identity) identity.isHost = identity.userId === session.host_user_id;
   if (session.status !== 'lobby' && !worldState) {
@@ -173,7 +177,9 @@ export async function connectLiveTeam(input: { teamId: string; userId: string; d
     const row = event.new as AuthoritativeSession | undefined;
     if (!row || !['lobby', 'active', 'completed'].includes(row.status)) return;
     if (snapshot.authoritativeSession && row.revision < snapshot.authoritativeSession.revision) return;
-    publish({ ...snapshot, hostId: row.host_user_id, authoritativeSession: row });
+    const cancelled = snapshot.authoritativeSession?.status === 'active' && row.status === 'lobby';
+    if (cancelled) { worldState = null; missionStatus = null; }
+    publish({ ...snapshot, hostId: row.host_user_id, authoritativeSession: row, ...(cancelled ? { worldState: null } : {}) });
   });
   for (const table of ['orbital_team_members', 'orbital_team_plans', 'orbital_team_campaigns']) {
     next.on('postgres_changes', { event: '*', schema: 'public', table, filter: `team_id=eq.${input.teamId}` }, () => {
@@ -277,6 +283,19 @@ export async function startLiveMission(missionId: string, options: { shipId?: Sh
   void trackPresence();
   publish({ ...snapshot, authoritativeSession: serverSession, error: '' });
   void channel.send({ type: 'broadcast', event: 'world-state', payload: { senderId: identity.userId, state: worldState } });
+  return true;
+}
+
+export async function cancelLiveMission() {
+  if (!cloudClient || !snapshot.teamId || !identity || identity.userId !== snapshot.hostId) return false;
+  const { data, error } = await cloudClient.rpc('orbital_cancel_team_mission', { target_team: snapshot.teamId });
+  if (error) { publish({ ...snapshot, error: error.message }); return false; }
+  const session = data as AuthoritativeSession;
+  if (!session || session.status !== 'lobby') return false;
+  worldState = null;
+  missionStatus = null;
+  publish({ ...snapshot, authoritativeSession: session, worldState: null, error: '' });
+  void trackPresence();
   return true;
 }
 

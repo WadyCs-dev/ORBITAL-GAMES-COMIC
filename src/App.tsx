@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useState, type CSSProperties } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import SolarSystemScene from './components/SolarSystemScene';
 import CampaignCelebration from './components/CampaignCelebration';
 import Commander from './components/Commander';
@@ -51,7 +51,8 @@ function App() {
   const finishVisualGuide = () => { writeStorage('orbital-command-visual-guide-v1', 'done'); setVisualGuide(null); };
   useEffect(() => { const start = () => { if (readStorage('orbital-command-visual-guide-v1') !== 'done') setVisualGuide('select'); }; window.addEventListener('orbital-start-visual-guide', start); return () => window.removeEventListener('orbital-start-visual-guide', start); }, []);
   const [mission, setMission] = useState<Mission>(initialMission);
-  const liveSession = useLiveSession((value) => value, (left, right) => left.connected === right.connected && left.hostId === right.hostId && left.worldState?.updatedAt === right.worldState?.updatedAt && left.worldState?.launchId === right.worldState?.launchId);
+  const liveSession = useLiveSession((value) => value, (left, right) => left.connected === right.connected && left.hostId === right.hostId && left.authoritativeSession?.status === right.authoritativeSession?.status && left.authoritativeSession?.revision === right.authoritativeSession?.revision && left.worldState?.updatedAt === right.worldState?.updatedAt && left.worldState?.launchId === right.worldState?.launchId);
+  const previousTeamStatus = useRef(liveSession.authoritativeSession?.status ?? null);
   const [teamVisited, setTeamVisited] = useState(cloudConfigured);
   const [screen, setScreen] = useState<AppScreen>(() => routeFromHash()?.screen ?? (['#developers', '#connect'].includes(window.location.hash) ? 'developers' : cloudConfigured ? 'team' : 'home'));
   const [previewId, setPreviewId] = useState(() => routeFromHash()?.previewId ?? '');
@@ -104,6 +105,15 @@ function App() {
     setMissionLaunch(false);
     if (sharedState.screen !== screen) setScreen(sharedState.screen);
   }, [liveSession.connected, liveSession.worldState?.updatedAt, liveSession.worldState?.launchId]);
+
+  useEffect(() => {
+    const nextStatus = liveSession.authoritativeSession?.status ?? null;
+    if (previousTeamStatus.current === 'active' && nextStatus === 'lobby' && ['mission', 'engineering', 'transit', 'exploration'].includes(screen)) {
+      setTeamVisited(true);
+      setScreen('team');
+    }
+    previousTeamStatus.current = nextStatus;
+  }, [liveSession.authoritativeSession?.status, liveSession.authoritativeSession?.revision, screen]);
 
   useEffect(() => {
     if (!liveSession.connected || !['home', 'mission', 'engineering', 'transit', 'exploration'].includes(screen)) return;
