@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: orbital-command-api
+    runtime: node
+    plan: free
+    buildCommand: npm ci
+    startCommand: node server/render-api.mjs
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+      - key: ORBITAL_ALLOWED_ORIGINS
+        sync: false
+      - key: NASA_API_KEY
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: ORBITAL_API_KEYS
+        sync: false
+      - key: ORBITAL_APP_URL
+        sync: false
