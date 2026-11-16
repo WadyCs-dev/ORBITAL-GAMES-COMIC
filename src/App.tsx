@@ -51,7 +51,7 @@ function App() {
   const finishVisualGuide = () => { writeStorage('orbital-command-visual-guide-v1', 'done'); setVisualGuide(null); };
   useEffect(() => { const start = () => { if (readStorage('orbital-command-visual-guide-v1') !== 'done') setVisualGuide('select'); }; window.addEventListener('orbital-start-visual-guide', start); return () => window.removeEventListener('orbital-start-visual-guide', start); }, []);
   const [mission, setMission] = useState<Mission>(initialMission);
-  const liveSession = useLiveSession((value) => value, (left, right) => left.connected === right.connected && left.hostId === right.hostId && left.authoritativeSession?.status === right.authoritativeSession?.status && left.authoritativeSession?.revision === right.authoritativeSession?.revision && left.worldState?.updatedAt === right.worldState?.updatedAt && left.worldState?.launchId === right.worldState?.launchId);
+  const liveSession = useLiveSession((value) => value, (left, right) => left.connected === right.connected && left.teamId === right.teamId && left.hostId === right.hostId && left.authoritativeSession?.status === right.authoritativeSession?.status && left.authoritativeSession?.revision === right.authoritativeSession?.revision && left.worldState?.updatedAt === right.worldState?.updatedAt && left.worldState?.launchId === right.worldState?.launchId);
   const previousTeamStatus = useRef(liveSession.authoritativeSession?.status ?? null);
   const [teamVisited, setTeamVisited] = useState(cloudConfigured);
   const [screen, setScreen] = useState<AppScreen>(() => routeFromHash()?.screen ?? (['#developers', '#connect'].includes(window.location.hash) ? 'developers' : cloudConfigured ? 'team' : 'home'));
@@ -77,10 +77,11 @@ function App() {
   });
   const missionText = localiseMission(mission, language);
   const missionIndex = useMemo(() => missions.findIndex((item) => item.id === mission.id) + 1, [mission.id]);
-  const availableMissions = useMemo(() => missions.filter((item) => chapterUnlocked(item.id, player.completedMissions)).sort((a, b) => {
+  const multiplayerCatalog = Boolean(liveSession.teamId);
+  const availableMissions = useMemo(() => missions.filter((item) => multiplayerCatalog || chapterUnlocked(item.id, player.completedMissions)).sort((a, b) => {
     const index = (id: string) => { const value = chapterOrder.findIndex((chapter) => chapter === id); return value < 0 ? chapterOrder.length : value; };
     return index(a.id) - index(b.id);
-  }), [player.completedMissions]);
+  }), [liveSession.teamId, multiplayerCatalog, player.completedMissions]);
 
   useEffect(() => {
     writeStorage('orbital-command-mission', mission.id);
@@ -172,7 +173,7 @@ function App() {
 
   const selectMission = (id: string) => {
     const next = missions.find((item) => item.id === id);
-    if (next && chapterUnlocked(next.id, player.completedMissions)) { setMission(next); setSharedDesign(null); if (visualGuide === 'select') setVisualGuide('prepare'); playSound('select'); }
+    if (next && (multiplayerCatalog || chapterUnlocked(next.id, player.completedMissions))) { setMission(next); setSharedDesign(null); if (visualGuide === 'select') setVisualGuide('prepare'); playSound('select'); }
     else if (next) { setNotice('Este capítulo se desbloqueará cuando completes la misión anterior.'); window.setTimeout(() => setNotice(''), 3500); }
   };
 
@@ -264,7 +265,7 @@ function App() {
               <button type="button" className="role-menu-entry" onClick={() => setScreen('roles')}><span><small>{t('NUEVO · SELECCIÓN DE MISIÓN','NEW · MISSION SELECTION')}</small><b>{t('Elige tu rol de exploración','Choose your role in exploration')}</b></span><i>✳</i><strong>{t('ASTRONAUTA / CIENTÍFICO','ASTRONAUT / SCIENTIST')} ↗</strong></button>
               <button type="button" className="role-menu-entry developer-home-entry" onClick={() => setScreen('developers')}><span><small>ORBITAL DEVELOPERS</small><b>{t('Conecta una idea científica o educativa','Connect a science or learning project')}</b></span><i>↗</i><strong>{t('EXPLORAR PROYECTO','EXPLORE PROJECT')} ↗</strong></button>
 
-              <div className="section-heading"><div><span className="eyebrow">{t('CAMPAÑA CIENTÍFICA', 'SCIENCE CAMPAIGN')}</span><h2>{t('Destinos disponibles ', 'Available destinations ')}<span>{String(availableMissions.length).padStart(2, '0')}</span></h2></div><button className="campaign-records-button" type="button" onClick={openCampaignRecords}>{t('MEDALLAS · ', 'MEDALS · ')}{campaignArchive.medals.length} ↗</button><span className="scroll-hint">{t('SE DESBLOQUEAN AL COMPLETAR CAPÍTULOS', 'UNLOCKED BY COMPLETING CHAPTERS')}</span></div>
+              <div className="section-heading"><div><span className="eyebrow">{t('CAMPAÑA CIENTÍFICA', 'SCIENCE CAMPAIGN')}</span><h2>{t('Destinos disponibles ', 'Available destinations ')}<span>{String(availableMissions.length).padStart(2, '0')}</span></h2></div><button className="campaign-records-button" type="button" onClick={openCampaignRecords}>{t('MEDALLAS · ', 'MEDALS · ')}{campaignArchive.medals.length} ↗</button><span className="scroll-hint">{multiplayerCatalog?t('MULTIJUGADOR · TODOS LOS DESTINOS DISPONIBLES','MULTIPLAYER · ALL DESTINATIONS AVAILABLE'):t('SE DESBLOQUEAN AL COMPLETAR CAPÍTULOS', 'UNLOCKED BY COMPLETING CHAPTERS')}</span></div>
               <div className="mission-list" aria-label={t("Misiones disponibles", "Available missions")}>
                 {availableMissions.map((item, index) => (
                   <button className={`mission-card ${mission.id === item.id ? 'selected' : ''} ${visualGuide === 'select' && mission.id === item.id ? 'visual-guide-target' : ''}`} key={item.id} onClick={() => selectMission(item.id)} aria-pressed={mission.id === item.id}>
@@ -325,7 +326,7 @@ function App() {
           <ExplorationScene language={language} mission={mission} onExit={() => setScreen('home')} shipId={shipId} design={design} arrival={arrival} scienceTarget={mission.id === 'earth' ? scienceTarget : null} />
         )}
         </Suspense></SceneBoundary>
-        {teamVisited && <div className="collaboration-container" hidden={screen !== 'team'}><SceneBoundary language={language}><Suspense fallback={<div className="systems-loading" role="status">{t('CARGANDO CUENTAS…', 'LOADING ACCOUNTS…')}</div>}><CollaborationHub language={language} mission={mission} shipId={shipId} design={design} onExit={() => setScreen('home')} onApply={(id, candidate) => { const next = missions.find(item => item.id === id); if (!next || !chapterUnlocked(id, player.completedMissions)) return false; setMission(next); setSharedDesign(candidate); setShipId(candidate.ship); setScreen('engineering'); return true; }} /></Suspense></SceneBoundary></div>}
+        {teamVisited && <div className="collaboration-container" hidden={screen !== 'team'}><SceneBoundary language={language}><Suspense fallback={<div className="systems-loading" role="status">{t('CARGANDO CUENTAS…', 'LOADING ACCOUNTS…')}</div>}><CollaborationHub language={language} mission={mission} shipId={shipId} design={design} onExit={() => setScreen('home')} onApply={(id, candidate) => { const next = missions.find(item => item.id === id); if (!next || (!multiplayerCatalog && !chapterUnlocked(id, player.completedMissions))) return false; setMission(next); setSharedDesign(candidate); setShipId(candidate.ship); setScreen('engineering'); return true; }} /></Suspense></SceneBoundary></div>}
         </div>
       </div>
       <footer className="statusbar"><span><i className="live-dot" />{t(' SIMULACIÓN LOCAL', ' LOCAL SIMULATION')}</span><span>ORBITAL COMMAND <i>·</i> BUILD 0.1.0</span><span>EDUCATIONAL MODEL <i>·</i> ALL VALUES APPROXIMATE</span></footer>
