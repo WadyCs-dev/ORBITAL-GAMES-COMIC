@@ -14,11 +14,13 @@ Earth-based cooperation is part of the story. The Dominican tracking station is 
 
 Requirements: Node.js 24 or later and a browser with WebGL. Available voices depend on the browser and operating system.
 
+In Windows PowerShell, use `npm.cmd` if script execution policy blocks `npm.ps1`:
+
 ```sh
-npm ci
-npm run dev
-npm run build
-npm test
+npm.cmd ci
+npm.cmd run dev
+npm.cmd run build
+npm.cmd test
 # With the project server and browser test tools running:
 npm run test:developers
 npm run test:impact
@@ -68,9 +70,9 @@ For account sign-in, registration, campaign backup and cooperative teams, add th
 - `SUPABASE_ACCESS_TOKEN`: optional Supabase personal access token; when present, the Pages workflow deploys `orbital-gamification`. Do not use an `sb_secret_` API key as this token.
 - `NASA_API_KEY`: optional; enables snapshot refreshes from NASA services that require a key. Public DONKI and APOD snapshots can refresh without it.
 
-The Pages workflow maps the Supabase URL and publishable key to the frontend build and checks that both are present. With `SUPABASE_ACCESS_TOKEN`, it also deploys the Developers Edge Function and sets its public app URL. In repository **Settings → Pages → Build and deployment**, set **Source** to **GitHub Actions**; publishing from a branch serves the unbuilt Vite entry point and leaves the app blank. Adding or changing a secret does not redeploy Pages; run the deployment workflow from **Actions → Deploy ORBITAL COMMAND to GitHub Pages → Run workflow**, or push a commit. In Supabase **Authentication → URL Configuration**, set the GitHub Pages address as the site URL and add it to the allowed redirect URLs so email confirmation returns to the game. Never add the database password or `service_role` key to GitHub Actions or frontend variables.
+The Pages workflow maps the Supabase URL and publishable key to the frontend build and checks that both are present. With `SUPABASE_ACCESS_TOKEN`, it also deploys the Developers Edge Function and sets its public app URL. In repository **Settings → Pages → Build and deployment**, set **Source** to **GitHub Actions**; publishing from a branch serves the unbuilt Vite entry point and leaves the app blank. Adding or changing a secret does not redeploy Pages; run the deployment workflow from **Actions → Deploy ORBITAL COMMAND to GitHub Pages → Run workflow**, or push a commit. In Supabase **Authentication → URL Configuration**, set `https://wadycs-dev.github.io/ORBITAL-GAMES-COMIC/` as the site URL and add it to the allowed redirect URLs so email confirmation returns to the game. Never add the database password or `service_role` key to GitHub Actions or frontend variables.
 
-To let teams start with two connected participants even when the team has four members, run `supabase/migrations/202611150007_allow_quorum_team_start.sql` once in the Supabase SQL Editor after the existing collaboration migrations.
+Before applying migrations, inspect Supabase's migration history and run only files that are missing, in dependency order. The collaboration path uses `202611150001`, `202611150003`, `202611150004`, then `202611150007` (two connected players may start) and `202611150008` (Realtime publication for team-room changes). Developers projects use `202611150005` and `202611150006`. `202611150002` is optional for the leaderboard. Do not rerun a migration already recorded by Supabase. See [Supabase setup](docs/supabase-setup.md).
 
 ## Project structure
 
@@ -99,6 +101,8 @@ The commander supports English and Spanish browser speech synthesis, subject to 
 Mission engineering offers three educational orbital profiles and three transit difficulty settings. Orbital profiles affect launch payload capacity, transit estimates, science data per scan and downlink capacity; the factors are illustrative rather than flight-certified orbit predictions. The selected difficulty changes transit reserves and energy consumption. Exhausted transit energy, zero integrity or an impossible mandatory manoeuvre results in a mission failure, with retry and design review. A design can be saved locally, compared and shared as validated JSON for the same mission. Exploration can fail on zero integrity or critically low energy in a non-surface orbital mission; not every failure scenario is represented.
 
 For a requirement-by-requirement implementation status, limitations and verification commands, see [project status and checklist](docs/project-status-and-checklist.md).
+
+For alternate hosting, the repository includes a Vercel frontend configuration and a Render API Blueprint. Set `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, and `VITE_ORBITAL_API_URL` in Vercel; set the backend's origin allowlist and any server-only keys in Render. Team presence and cooperative state continue to use Supabase Realtime; Render does not replace it with a WebSocket game server. See [Vercel and Render deployment](docs/deployment-vercel-render.md).
 
 Accounts, private campaign backup, shared team planning and cooperative presence require Supabase setup. ORBITAL DEVELOPERS saves projects through its Supabase Edge Function and user sign-in; apply migrations and deploy the function as described in [Supabase setup](docs/supabase-setup.md) and [ORBITAL Developers](docs/orbital-developers.md). A separate Node/MCP backend remains optional for server-side integrations. The [implementation checklist](docs/project-status-and-checklist.md) separates completed code from production configuration and remaining work.
 
