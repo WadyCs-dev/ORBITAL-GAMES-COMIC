@@ -53,11 +53,12 @@ This is a code-based status record, not a claim of expert validation. “Partial
 - [x] Added REST `/api/v1` endpoints to the Node integration server with API-key ownership/rate limits, and the Supabase Edge Function for the web form with authenticated user ownership. Both validate inputs and protect/revoke private preview links.
 - [x] Added MCP 2025-11-25 Streamable HTTP JSON-RPC (`POST /mcp`, `GET` returns 405, no SSE server stream), six typed tools and public read-only capability/template tools.
 - [x] Added Supabase Edge Function `orbital-gamification`, account-based project saving, public/unlisted previews, OpenAPI 3.1, and ownership migration 006. The existing Node REST/MCP server remains available for external integrations.
-- [~] The Supabase Edge Function and schema are implemented in this repository, but still require applying migrations 005–006 and deploying the function to the real Supabase project. GitHub Pages builds the API URL from its existing Supabase setting.
+- [~] The latest verified GitHub Actions run on `main` deployed the `orbital-gamification` Edge Function and published GitHub Pages successfully. The live Supabase migration history and Auth settings were not queried; confirm migrations 005–008 against the project history before applying any SQL.
 - [~] Current preview is an interactive proposal/mission briefing rendered by the existing React application. It does not generate arbitrary Three.js scenes or join project previews to the live co-op session. The cooperative capability remains marked experimental.
 - [ ] Comprehensive redesign of all 18 product areas, authenticated self-service API-key issuance, configurable AI providers, production rate limiting/monitoring, external penetration/security review and live tests against deployed Supabase/MCP clients remain outstanding.
 
 ## Verification and operations
+- [~] Optional Vercel frontend and Render API configurations are prepared in `vercel.json`, `render.yaml` and `docs/deployment-vercel-render.md`. Local build and CORS/health unit tests pass; external Vercel/Render deployments were not run. Render is not an authoritative flight simulation and user binary uploads are not implemented.
 
 - Automated unit tests: `npm test`.
 - External platform unit test: `node --test tests/orbital-platform.test.mjs`; two-context browser smoke test with mock API: `npm run build` with Supabase URL and publishable key, then `npm run test:developers`. The mock does not exercise a real Supabase project or physical device.

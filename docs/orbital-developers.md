@@ -8,7 +8,7 @@ ORBITAL COMMAND conserva la aplicación React/Three.js y sus escenarios educativ
 - Supabase Edge Function `orbital-gamification` implementa la API REST y accede a PostgreSQL con credenciales administradas por Supabase.
 - El cliente deriva la URL de la función de `VITE_SUPABASE_URL`. GitHub Pages no necesita alojar Node ni una variable adicional `ORBITAL_PLATFORM_API_URL`.
 - Para compatibilidad, el proyecto conserva `server/orbital-platform.mjs`, un servidor Node con API keys por equipo y MCP Streamable HTTP. El formulario web usa la Edge Function.
-- Esta entrega incluye el código, pero no pudo desplegar la función ni aplicar migraciones en el proyecto real porque no tiene sus credenciales administrativas.
+- El workflow de GitHub Actions puede desplegar esta función cuando dispone de `SUPABASE_ACCESS_TOKEN`; confirma el resultado del último run en Actions. Las migraciones SQL deben estar aplicadas en el proyecto Supabase. GitHub Pages no ejecuta un servidor Node persistente.
 
 ## Despliegue Supabase
 
@@ -19,7 +19,7 @@ ORBITAL COMMAND conserva la aplicación React/Three.js y sus escenarios educativ
 ```sh
 supabase link --project-ref <project-ref>
 supabase functions deploy orbital-gamification --no-verify-jwt
-supabase secrets set ORBITAL_APP_URL=https://susan-castillo29.github.io/orbital-command ORBITAL_ALLOWED_ORIGINS=https://susan-castillo29.github.io
+supabase secrets set ORBITAL_APP_URL=https://wadycs-dev.github.io/ORBITAL-GAMES-COMIC ORBITAL_ALLOWED_ORIGINS=https://wadycs-dev.github.io
 ```
 
 `--no-verify-jwt` es necesario porque la función permite lecturas públicas. La función valida el JWT de Supabase en las operaciones que requieren sesión. Supabase provee `SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY` en el entorno de la función; la clave de servicio nunca se copia a GitHub ni al navegador.
@@ -27,7 +27,7 @@ supabase secrets set ORBITAL_APP_URL=https://susan-castillo29.github.io/orbital-
 4. Ejecuta de nuevo el workflow de GitHub Pages. El frontend llamará a `https://<project-ref>.supabase.co/functions/v1/orbital-gamification` automáticamente.
 5. Verifica `https://<project-ref>.supabase.co/functions/v1/orbital-gamification/api/v1/capabilities`. Crea una cuenta, inicia sesión, guarda un borrador y prueba el enlace de vista previa desde una sesión/navegador aparte.
 
-Supabase Auth debe tener habilitado email/contraseña y el correo de confirmación configurado. Añade `https://susan-castillo29.github.io/orbital-command/` a las URL de redirección permitidas. El usuario debe poder iniciar sesión antes de guardar. El formulario solicita consentimiento para almacenar el contexto y su archivo como borrador privado.
+Supabase Auth debe tener habilitado email/contraseña y el correo de confirmación configurado. Añade `https://wadycs-dev.github.io/ORBITAL-GAMES-COMIC/` a las URL de redirección permitidas. El usuario debe poder iniciar sesión antes de guardar. El formulario solicita consentimiento para almacenar el contexto y su archivo como borrador privado.
 
 ## REST
 

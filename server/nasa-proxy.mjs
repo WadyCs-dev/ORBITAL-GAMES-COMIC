@@ -33,13 +33,31 @@ export const nasaDatasetIds = Object.keys(datasets);
 const cache = new Map();
 const requests = new Map();
 const send = (res, status, value) => {res.statusCode=status;res.setHeader('Content-Type','application/json; charset=utf-8');res.setHeader('Cache-Control','no-store');res.setHeader('X-Content-Type-Options','nosniff');res.end(JSON.stringify(value));};
+function allowedBrowserOrigin(origin) {
+  if (!origin) return true;
+  try {
+    const parsed = new URL(origin);
+    if (parsed.origin !== origin || parsed.username || parsed.password) return false;
+    const configured = (process.env.ORBITAL_ALLOWED_ORIGINS || '').split(',').map(value => value.trim()).filter(Boolean);
+    return configured.includes(origin) || ['localhost', '127.0.0.1'].includes(parsed.hostname);
+  } catch { return false; }
+}
+function applyBrowserCors(req, res) {
+  const origin = req.headers.origin;
+  if (origin && !allowedBrowserOrigin(origin)) return false;
+  if (origin) { res.setHeader('Access-Control-Allow-Origin', origin); res.setHeader('Vary', 'Origin'); }
+  return true;
+}
 export async function nasaHandler(req,res,next=()=>send(res,404,{error:'No encontrado'})) {
   let route; try { route = new URL(req.url, 'http://localhost').pathname; } catch { return send(res,400,{error:'Solicitud inválida'}); }
   if (route.startsWith('/api/v1/') || route === '/mcp') return orbitalHandler(req,res,next);
+  if (route === '/healthz') return req.method === 'GET' ? send(res, 200, { status: 'ok' }) : send(res, 405, { error: 'Solo se permite GET' });
   let request; try {request=new URL(req.url,'http://localhost');} catch {return send(res,400,{error:'Solicitud inválida'});}
   if(request.pathname!=='/api/nasa' && request.pathname!=='/api/nasa/apod-image') return next();
+  if (!applyBrowserCors(req, res)) return send(res, 403, { error: 'Origen no permitido.' });
+  if (req.method === 'OPTIONS') { res.writeHead(204, { Allow: 'GET, OPTIONS', 'Access-Control-Allow-Methods': 'GET, OPTIONS', 'Access-Control-Allow-Headers': 'Accept, Content-Type', 'Access-Control-Max-Age': '600' }).end(); return; }
   if(req.method!=='GET') return send(res,405,{error:'Solo se permite GET'});
-  if(req.headers['sec-fetch-site']==='cross-site') return send(res,403,{error:'Origen no permitido'});
+  if(req.headers['sec-fetch-site']==='cross-site' && !req.headers.origin) return send(res,403,{error:'Origen no permitido'});
   const isImage=request.pathname==='/api/nasa/apod-image';
   const dataset=request.searchParams.get('dataset');
   if(isImage && request.search || !isImage && (!dataset || !Object.hasOwn(datasets,dataset) || [...request.searchParams.keys()].some(k=>k!=='dataset'))) return send(res,400,{error:'Conjunto de datos no permitido'});

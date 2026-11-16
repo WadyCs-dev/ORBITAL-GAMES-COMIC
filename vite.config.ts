@@ -15,6 +15,14 @@ export default defineConfig(({ mode }) => {
   const cloudUrl = cloudEnv.VITE_SUPABASE_URL;
   const cloudKey = cloudEnv.VITE_SUPABASE_PUBLISHABLE_KEY;
   let cloudOrigin = '';
+  const orbitalApiUrl = loadEnv(mode, process.cwd(), 'VITE_ORBITAL_').VITE_ORBITAL_API_URL;
+  let orbitalApiOrigin = '';
+  if (orbitalApiUrl) {
+    let parsed: URL;
+    try { parsed = new URL(orbitalApiUrl); } catch { throw new Error('Invalid VITE_ORBITAL_API_URL'); }
+    if (!['https:', 'http:'].includes(parsed.protocol) || parsed.username || parsed.password || parsed.search || parsed.hash || !['', '/'].includes(parsed.pathname) || (parsed.protocol !== 'https:' && !['localhost', '127.0.0.1'].includes(parsed.hostname))) throw new Error('VITE_ORBITAL_API_URL must be an HTTPS origin (HTTP is allowed only for localhost).');
+    orbitalApiOrigin = parsed.origin;
+  }
   if (cloudUrl || cloudKey) {
     if (!cloudUrl || !cloudKey || cloudKey.length > 4096 || cloudKey.startsWith('sb_secret_')) throw new Error('Use a Supabase URL and publishable/anon key; never a secret key.');
     let parsed: URL;
@@ -33,7 +41,7 @@ export default defineConfig(({ mode }) => {
     name: 'orbital-production-csp',
     apply: 'build',
     transformIndexHtml() {
-      return [{ tag: 'meta', attrs: { 'http-equiv': 'Content-Security-Policy', content: `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://images-assets.nasa.gov https://epic.gsfc.nasa.gov https://assets.science.nasa.gov; media-src 'self' blob:; connect-src 'self' ${cloudOrigin}; object-src 'none'; base-uri 'self'; form-action 'self'` }, injectTo: 'head-prepend' }];
+      return [{ tag: 'meta', attrs: { 'http-equiv': 'Content-Security-Policy', content: `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: ${orbitalApiOrigin} https://images-assets.nasa.gov https://epic.gsfc.nasa.gov https://assets.science.nasa.gov; media-src 'self' blob:; connect-src 'self' ${cloudOrigin} ${orbitalApiOrigin}; object-src 'none'; base-uri 'self'; form-action 'self'` }, injectTo: 'head-prepend' }];
     },
   }],
   build: {
