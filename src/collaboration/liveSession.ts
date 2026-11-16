@@ -229,6 +229,9 @@ export async function disconnectLiveTeam() {
 export function setLivePose(next: LivePose) {
   if (!validPose(next)) return;
   pose = next;
+  // Keep the database heartbeat as the fallback pose transport when Realtime is unavailable.
+  // Presence traffic should only be attempted while the private channel is actually connected.
+  if (!snapshot.connected) return;
   const now = Date.now();
   if (now - lastPoseSent < 80) return;
   lastPoseSent = now;
