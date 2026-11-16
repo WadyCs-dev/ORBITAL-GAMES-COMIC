@@ -236,7 +236,7 @@ export function setLivePose(next: LivePose) {
 }
 
 export function setLiveReady(next: boolean) {
-  if (!channel || !snapshot.connected) return;
+  if (!channel || !identity) return;
   ready = next;
   lastPoseSent = 0;
   void trackPresence();
@@ -263,7 +263,7 @@ export async function startLiveMission(missionId: string, options: { shipId?: Sh
   const players = snapshot.players;
   const roles = new Set(['planning', 'engineering', 'science', 'communications']);
   const activePlayers = players.filter((player) => player.connected && player.ready && roles.has(player.role));
-  if (!channel || !cloudClient || !identity || identity.userId !== snapshot.hostId || !snapshot.connected || !missionIds.has(missionId) || activePlayers.length < 2 || activePlayers.length > 4 || !activePlayers.some((player) => player.userId === identity?.userId)) return false;
+  if (!channel || !cloudClient || !identity || identity.userId !== snapshot.hostId || !missionIds.has(missionId) || activePlayers.length < 2 || activePlayers.length > 4 || !activePlayers.some((player) => player.userId === identity?.userId)) return false;
   const { data, error } = await cloudClient.rpc('orbital_start_team_mission', { target_team: snapshot.teamId, target_mission: missionId });
   if (error) { publish({ ...snapshot, error: error.message }); return false; }
   const serverSession = data as AuthoritativeSession;
