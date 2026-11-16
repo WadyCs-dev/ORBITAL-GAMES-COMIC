@@ -86,7 +86,7 @@ function App() {
   }, [mission.id]);
 
   useEffect(() => {
-    if (!liveSession.connected || !liveSession.worldState) return;
+    if (!liveSession.worldState) return;
     const sharedState = liveSession.worldState;
     const sharedMission = missions.find((item) => item.id === sharedState.missionId);
     if (sharedMission && sharedMission.id !== mission.id) setMission(sharedMission);
