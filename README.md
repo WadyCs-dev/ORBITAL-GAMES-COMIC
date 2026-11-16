@@ -70,7 +70,7 @@ For account sign-in, registration, campaign backup and cooperative teams, add th
 
 The Pages workflow maps the Supabase URL and publishable key to the frontend build and checks that both are present. With `SUPABASE_ACCESS_TOKEN`, it also deploys the Developers Edge Function and sets its public app URL. In repository **Settings → Pages → Build and deployment**, set **Source** to **GitHub Actions**; publishing from a branch serves the unbuilt Vite entry point and leaves the app blank. Adding or changing a secret does not redeploy Pages; run the deployment workflow from **Actions → Deploy ORBITAL COMMAND to GitHub Pages → Run workflow**, or push a commit. In Supabase **Authentication → URL Configuration**, set the GitHub Pages address as the site URL and add it to the allowed redirect URLs so email confirmation returns to the game. Never add the database password or `service_role` key to GitHub Actions or frontend variables.
 
-To let teams start with two connected participants even when the team has four members, run `supabase/migrations/202611150007_allow_quorum_team_start.sql` once in the Supabase SQL Editor after the existing collaboration migrations.
+For cooperative sessions, apply migrations `202611150007_allow_quorum_team_start.sql` and `202611150008_realtime_team_room.sql` after the collaboration migrations listed in [Supabase setup](docs/supabase-setup.md). The first allows a ready connected quorum to start a mission; the second publishes team-room changes for realtime refreshes.
 
 ## Project structure
 
