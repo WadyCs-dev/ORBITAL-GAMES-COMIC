@@ -11,7 +11,7 @@ Importa `WadyCs-dev/ORBITAL-GAMES-COMIC` en Vercel con raíz del proyecto en `/`
 - `VITE_ORBITAL_API_URL`: URL HTTPS del servicio API de Render, sin ruta ni barra final.
 - `VITE_NASA_MODE=proxy`: usa Render para consultas NASA y las instantáneas publicadas si falla el proxy.
 
-El CSP de Vite permite al origen configurado las conexiones API/WebSocket de Supabase y las peticiones/imagen del proxy. No añadas una rewrite global: el juego usa archivos estáticos y navegación hash.
+El CSP de Vite permite al origen configurado las conexiones API/WebSocket de Supabase y las peticiones/imagen del proxy. No añadas una rewrite global: el juego usa archivos estáticos y navegación hash. La configuración de Vercel sigue su [referencia oficial de `vercel.json`](https://vercel.com/docs/project-configuration/vercel-json).
 
 ## Render: API
 
@@ -26,7 +26,7 @@ Variables privadas opcionales del servicio:
 
 Render asigna `PORT`; el servidor escucha en `0.0.0.0`, expone `/healthz` y rechaza orígenes de navegador que no estén permitidos (localhost queda habilitado para desarrollo). La prueba de health/CORS es unitaria; no se ha desplegado el Blueprint ni probado un dominio real de Vercel.
 
-El plan Free puede suspender el servicio cuando queda inactivo y su sistema de archivos es efímero. No subas ni guardes archivos de usuarios en Render. Los borradores Developers actuales almacenan texto limitado en Supabase; el proyecto todavía no implementa carga de imágenes ni adjuntos binarios. Para producción continua, selecciona un plan estable después de revisar los costos en tu cuenta de Render.
+El plan Free puede suspender el servicio cuando queda inactivo y su sistema de archivos es efímero ([limitaciones oficiales](https://render.com/docs/free)). No subas ni guardes archivos de usuarios en Render. Los borradores Developers actuales almacenan texto limitado en Supabase; el proyecto todavía no implementa carga de imágenes ni adjuntos binarios. Para producción continua, selecciona un plan estable después de revisar los costos en tu cuenta de Render.
 
 ## Datos y límites actuales
 
