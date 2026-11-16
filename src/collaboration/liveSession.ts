@@ -133,7 +133,7 @@ async function heartbeat(teamId: string, generation: number) {
     worldState = { missionId: session.mission_id, screen: 'exploration', updatedAt: restoredAt, routeUpdatedAt: restoredAt };
   }
   const latest: LivePlayer[] = (result?.players ?? []).map((player) => ({ userId: player.user_id, displayName: player.user_id === identity?.userId ? identity.displayName : (snapshot.players.find((candidate) => candidate.userId === player.user_id)?.displayName ?? player.user_id.slice(0, 8)), role: player.role, isHost: player.user_id === session.host_user_id, connected: player.connected, ready: player.ready, pose: player.pose, missionStatus: snapshot.players.find((candidate) => candidate.userId === player.user_id)?.missionStatus ?? null, worldState: snapshot.players.find((candidate) => candidate.userId === player.user_id)?.worldState ?? null }));
-  publish({ ...snapshot, hostId: session.host_user_id, authoritativeSession: session, players: latest.slice(0, 4), worldState, error: '' });
+  publish({ ...snapshot, hostId: session.host_user_id, authoritativeSession: session, players: latest.slice(0, 4), worldState, error: snapshot.connected ? '' : snapshot.error });
   if (hostChanged) void trackPresence();
 }
 
@@ -147,6 +147,10 @@ export async function connectLiveTeam(input: { teamId: string; userId: string; d
   if (previous && cloudClient) await cloudClient.removeChannel(previous);
   if (generation !== connectionGeneration) return;
   if (!cloudClient) return;
+  let realtimeAuthError = '';
+  try { await cloudClient.realtime.setAuth(); }
+  catch (error) { realtimeAuthError = error instanceof Error ? error.message : 'Realtime authentication failed.'; }
+  if (generation !== connectionGeneration) return;
   identity = { userId: input.userId, displayName: input.displayName.trim().slice(0, 48) || 'Explorer', role: input.role, isHost: input.hostId === input.userId };
   pose = initialPose;
   ready = false;
@@ -155,7 +159,7 @@ export async function connectLiveTeam(input: { teamId: string; userId: string; d
   lastPoseSent = 0;
   const next = cloudClient.channel(`orbital-team:${input.teamId}`, { config: { private: true, presence: { key: input.userId } } });
   channel = next;
-  publish({ ...empty, teamId: input.teamId, selfId: input.userId, hostId: input.hostId });
+  publish({ ...empty, teamId: input.teamId, selfId: input.userId, hostId: input.hostId, error: realtimeAuthError });
   // Keep durable database presence alive even if the Realtime websocket cannot subscribe.
   // A failed/private-channel handshake must not leave every roster member marked offline.
   void heartbeat(input.teamId, generation);
