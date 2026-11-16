@@ -156,6 +156,10 @@ export async function connectLiveTeam(input: { teamId: string; userId: string; d
   const next = cloudClient.channel(`orbital-team:${input.teamId}`, { config: { private: true, presence: { key: input.userId } } });
   channel = next;
   publish({ ...empty, teamId: input.teamId, selfId: input.userId, hostId: input.hostId });
+  // Keep durable database presence alive even if the Realtime websocket cannot subscribe.
+  // A failed/private-channel handshake must not leave every roster member marked offline.
+  void heartbeat(input.teamId, generation);
+  heartbeatTimer = window.setInterval(() => { void heartbeat(input.teamId, generation); }, 2500);
   next.on('presence', { event: 'sync' }, () => {
     const latest = membersFromPresence();
     if (latest.hostState && (!worldState || latest.hostState.updatedAt >= worldState.updatedAt)) worldState = latest.hostState;
@@ -198,7 +202,6 @@ export async function connectLiveTeam(input: { teamId: string; userId: string; d
       publish({ ...snapshot, connected: true, error: '' });
       void trackPresence();
       void heartbeat(input.teamId, generation);
-      heartbeatTimer = window.setInterval(() => { void heartbeat(input.teamId, generation); }, 2500);
     } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
       publish({ ...snapshot, connected: false, error: error?.message ?? `Realtime ${status.toLowerCase()}.` });
     }

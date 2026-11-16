@@ -31,3 +31,5 @@
 .app-shell[data-theme='light'] .team-member-roster li.online strong{color:#176a43}
 .app-shell[data-theme='light'] .team-member-roster li.offline strong{color:#8b3c32}
 @media(max-width:520px){.team-member-roster li{grid-template-columns:8px minmax(0,1fr)}.team-member-roster strong{grid-column:2;text-align:left}}
+
+.auth-field-help{display:block;margin:-6px 0 12px;color:var(--ui-muted);font-size:12px;line-height:1.55}.auth-registration-hint{padding:10px 12px;border-left:3px solid var(--ui-accent);background:var(--ui-raised);color:var(--ui-text);font-size:12px;line-height:1.55}.account-card .collaboration-actions button:disabled{opacity:.55;cursor:not-allowed}
