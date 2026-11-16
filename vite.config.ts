@@ -15,6 +15,7 @@ export default defineConfig(({ mode }) => {
   const cloudUrl = cloudEnv.VITE_SUPABASE_URL;
   const cloudKey = cloudEnv.VITE_SUPABASE_PUBLISHABLE_KEY;
   let cloudOrigin = '';
+  let cloudRealtimeOrigin = '';
   if (cloudUrl || cloudKey) {
     if (!cloudUrl || !cloudKey || cloudKey.length > 4096 || cloudKey.startsWith('sb_secret_')) throw new Error('Use a Supabase URL and publishable/anon key; never a secret key.');
     let parsed: URL;
@@ -25,6 +26,7 @@ export default defineConfig(({ mode }) => {
       catch { throw new Error('Supabase key must be a publishable or legacy anon key.'); }
     }
     cloudOrigin = parsed.origin;
+    cloudRealtimeOrigin = `wss://${parsed.host}`;
   }
   if (env.NASA_API_KEY && !process.env.NASA_API_KEY) process.env.NASA_API_KEY = env.NASA_API_KEY;
   return ({
@@ -33,7 +35,7 @@ export default defineConfig(({ mode }) => {
     name: 'orbital-production-csp',
     apply: 'build',
     transformIndexHtml() {
-      return [{ tag: 'meta', attrs: { 'http-equiv': 'Content-Security-Policy', content: `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://images-assets.nasa.gov https://epic.gsfc.nasa.gov https://assets.science.nasa.gov; media-src 'self' blob:; connect-src 'self' ${cloudOrigin}; object-src 'none'; base-uri 'self'; form-action 'self'` }, injectTo: 'head-prepend' }];
+      return [{ tag: 'meta', attrs: { 'http-equiv': 'Content-Security-Policy', content: `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://images-assets.nasa.gov https://epic.gsfc.nasa.gov https://assets.science.nasa.gov; media-src 'self' blob:; connect-src 'self' ${cloudOrigin} ${cloudRealtimeOrigin}; object-src 'none'; base-uri 'self'; form-action 'self'` }, injectTo: 'head-prepend' }];
     },
   }],
   build: {
