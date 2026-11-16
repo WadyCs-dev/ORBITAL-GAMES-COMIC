@@ -28,6 +28,8 @@ let worldState: LiveWorldState | null = null;
 let lastPoseSent = 0;
 let lastChatSent = 0;
 let heartbeatTimer = 0;
+let reconnectTimer = 0;
+let reconnectAttempts = 0;
 const listeners = new Set<() => void>();
 const missionIds = new Set(['earth', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'europa', 'saturn', 'titan', 'uranus', 'neptune', 'sun', 'asteroid']);
 const screens = new Set(['home', 'mission', 'engineering', 'transit', 'exploration']);
@@ -139,8 +141,12 @@ async function heartbeat(teamId: string, generation: number) {
 
 export async function connectLiveTeam(input: { teamId: string; userId: string; displayName: string; role: string; hostId: string }) {
   const generation = ++connectionGeneration;
+  if (reconnectTimer) window.clearTimeout(reconnectTimer);
+  reconnectTimer = 0;
   if (heartbeatTimer) window.clearInterval(heartbeatTimer);
   heartbeatTimer = 0;
+  const sameTeam = snapshot.teamId === input.teamId && snapshot.selfId === input.userId && identity !== null;
+  const previousSnapshot = snapshot;
   const previous = channel;
   channel = null;
   identity = null;
@@ -148,14 +154,19 @@ export async function connectLiveTeam(input: { teamId: string; userId: string; d
   if (generation !== connectionGeneration) return;
   if (!cloudClient) return;
   identity = { userId: input.userId, displayName: input.displayName.trim().slice(0, 48) || 'Explorer', role: input.role, isHost: input.hostId === input.userId };
-  pose = initialPose;
-  ready = false;
-  missionStatus = null;
-  worldState = null;
+  if (!sameTeam) {
+    pose = initialPose;
+    ready = false;
+    missionStatus = null;
+    worldState = null;
+    reconnectAttempts = 0;
+  }
   lastPoseSent = 0;
   const next = cloudClient.channel(`orbital-team:${input.teamId}`, { config: { private: true, presence: { key: input.userId } } });
   channel = next;
-  publish({ ...empty, teamId: input.teamId, selfId: input.userId, hostId: input.hostId });
+  publish(sameTeam
+    ? { ...previousSnapshot, connected: false, teamId: input.teamId, selfId: input.userId, hostId: input.hostId, error: 'Realtime disconnected. Reconnecting…' }
+    : { ...empty, teamId: input.teamId, selfId: input.userId, hostId: input.hostId });
   next.on('presence', { event: 'sync' }, () => {
     const latest = membersFromPresence();
     if (latest.hostState && (!worldState || latest.hostState.updatedAt >= worldState.updatedAt)) worldState = latest.hostState;
@@ -195,18 +206,31 @@ export async function connectLiveTeam(input: { teamId: string; userId: string; d
   next.subscribe((status, error) => {
     if (channel !== next || generation !== connectionGeneration) return;
     if (status === 'SUBSCRIBED') {
+      reconnectAttempts = 0;
       publish({ ...snapshot, connected: true, error: '' });
       void trackPresence();
       void heartbeat(input.teamId, generation);
       heartbeatTimer = window.setInterval(() => { void heartbeat(input.teamId, generation); }, 2500);
     } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
-      publish({ ...snapshot, connected: false, error: error?.message ?? `Realtime ${status.toLowerCase()}.` });
+      const reason = error?.message ?? `Realtime ${status.toLowerCase()}.`;
+      publish({ ...snapshot, connected: false, error: `${reason} Reconnecting…` });
+      if (!reconnectTimer) {
+        const delay = Math.min(15_000, 1_000 * (2 ** Math.min(reconnectAttempts, 4)));
+        reconnectAttempts += 1;
+        reconnectTimer = window.setTimeout(() => {
+          reconnectTimer = 0;
+          if (generation === connectionGeneration && snapshot.teamId === input.teamId && snapshot.selfId === input.userId) void connectLiveTeam(input);
+        }, delay);
+      }
     }
   });
 }
 
 export async function disconnectLiveTeam() {
   connectionGeneration += 1;
+  if (reconnectTimer) window.clearTimeout(reconnectTimer);
+  reconnectTimer = 0;
+  reconnectAttempts = 0;
   const previous = channel;
   channel = null;
   identity = null;
